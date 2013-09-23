@@ -24,6 +24,7 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <mach/cpufreq.h>
+<<<<<<< HEAD
 
 static int enabled;
 static struct msm_thermal_data msm_thermal_info;
@@ -34,33 +35,36 @@ static int limit_idx;
 static int limit_idx_low;
 static int limit_idx_high;
 static struct cpufreq_frequency_table *table;
+=======
+#include <linux/earlysuspend.h> 
 
-static int msm_thermal_get_freq_table(void)
-{
-	int ret = 0;
-	int i = 0;
+#define NO_RELEASE_TEMPERATURE 0
+#define NO_TRIGGER_TEMPERATURE -1
+>>>>>>> 2cdaea4... kernel-based thermal control (based on @crpalmer's work) from @flar2
 
-	table = cpufreq_frequency_get_table(0);
-	if (table == NULL) {
-		pr_debug("%s: error reading cpufreq table\n", __func__);
-		ret = -EINVAL;
-		goto fail;
-	}
+#define N_TEMP_LIMITS 4
 
-	while (table[i].frequency != CPUFREQ_TABLE_END)
-		i++;
+static unsigned temp_hysteresis = 5;
+static unsigned int limit_temp_degC[N_TEMP_LIMITS] = { 80, 85, 92, 102 };
+static unsigned int limit_freq[N_TEMP_LIMITS] = { 1512000, 1350000, 918000, 384000 };
 
+module_param_array(limit_temp_degC, uint, NULL, 0644);
+module_param_array(limit_freq, uint, NULL, 0644);
+
+<<<<<<< HEAD
 	limit_idx_low = 0;
 	limit_idx_high = limit_idx = i - 1;
 	BUG_ON(limit_idx_high <= 0 || limit_idx_high <= limit_idx_low);
 fail:
 	return ret;
 }
+=======
+int throttled_bin = -1;
+>>>>>>> 2cdaea4... kernel-based thermal control (based on @crpalmer's work) from @flar2
 
-static int update_cpu_max_freq(int cpu, uint32_t max_freq)
-{
-	int ret = 0;
+module_param(throttled_bin, int, 0444);
 
+<<<<<<< HEAD
 	ret = msm_cpufreq_set_freq_limits(cpu, MSM_CPUFREQ_NO_LIMIT, max_freq);
 	if (ret)
 		return ret;
@@ -73,12 +77,21 @@ static int update_cpu_max_freq(int cpu, uint32_t max_freq)
 		pr_info("msm_thermal: Max frequency reset for cpu%d\n", cpu);
 
 	ret = cpufreq_update_policy(cpu);
+=======
+static struct msm_thermal_data msm_thermal_info;
+static struct delayed_work first_work;
+static struct work_struct trip_work;
+>>>>>>> 2cdaea4... kernel-based thermal control (based on @crpalmer's work) from @flar2
 
-	return ret;
+static int max_freq(int throttled_bin)
+{
+	if (throttled_bin < 0) return MSM_CPUFREQ_NO_LIMIT;
+	else return limit_freq[throttled_bin];
 }
 
-static void check_temp(struct work_struct *work)
+static int limit_temp(int throttled_bin)
 {
+<<<<<<< HEAD
 	static int limit_init;
 	struct tsens_device tsens_dev;
 	unsigned long temp = 0;
@@ -137,39 +150,86 @@ reschedule:
 	if (enabled)
 		schedule_delayed_work(&check_temp_work,
 				msecs_to_jiffies(msm_thermal_info.poll_ms));
+=======
+	if (throttled_bin < 0) return limit_temp_degC[0];
+	else if (throttled_bin == N_TEMP_LIMITS-1) return NO_TRIGGER_TEMPERATURE;
+	else return limit_temp_degC[throttled_bin+1];
 }
 
-static void disable_msm_thermal(void)
+static int release_temp(int throttled_bin)
 {
-	int cpu = 0;
+	if (throttled_bin < 0) return NO_RELEASE_TEMPERATURE;
+	else return limit_temp_degC[throttled_bin] - temp_hysteresis;
+}
 
-	/* make sure check_temp is no longer running */
-	cancel_delayed_work(&check_temp_work);
-	flush_scheduled_work();
+static int update_cpu_max_freq(int cpu, int throttled_bin, unsigned temp)
+{
+	int ret;
+	int max_frequency = max_freq(throttled_bin);
 
-	if (limited_max_freq == MSM_CPUFREQ_NO_LIMIT)
+	ret = msm_cpufreq_set_freq_limits(cpu, MSM_CPUFREQ_NO_LIMIT, max_frequency);
+	if (ret)
+		return ret;
+
+	ret = cpufreq_update_policy(cpu);
+	if (ret)
+		return ret;
+
+	if (max_frequency != MSM_CPUFREQ_NO_LIMIT) {
+		struct cpufreq_policy policy;
+
+		if ((ret = cpufreq_get_policy(&policy, cpu)) == 0)
+			ret = cpufreq_driver_target(&policy, max_frequency, CPUFREQ_RELATION_L);
+	}
+
+	if (max_frequency != MSM_CPUFREQ_NO_LIMIT)
+		pr_info("msm_thermal: limiting cpu%d max frequency to %d at %u degC\n",
+				cpu, max_frequency, temp);
+	else
+		pr_info("msm_thermal: Max frequency reset for cpu%d at %u degC\n", cpu, temp);
+
+	return ret;
+>>>>>>> 2cdaea4... kernel-based thermal control (based on @crpalmer's work) from @flar2
+}
+
+static void
+update_all_cpus_max_freq_if_changed(int new_throttled_bin, unsigned temp)
+{
+	int cpu;
+	int ret;
+
+	if (throttled_bin == new_throttled_bin)
 		return;
 
+#ifdef CONFIG_PERFLOCK_BOOT_LOCK
+	release_boot_lock();
+#endif
+
+	throttled_bin = new_throttled_bin;
+	
+
 	for_each_possible_cpu(cpu) {
-		update_cpu_max_freq(cpu, MSM_CPUFREQ_NO_LIMIT);
+		ret = update_cpu_max_freq(cpu, throttled_bin, temp);
+		if (ret)
+			pr_warn("Unable to limit cpu%d\n", cpu);
 	}
 }
 
-static int set_enabled(const char *val, const struct kernel_param *kp)
+static void
+configure_sensor_trip_points(void)
 {
-	int ret = 0;
+	int trigger_temperature = limit_temp(throttled_bin);
+	int release_temperature = release_temp(throttled_bin);
 
-	ret = param_set_bool(val, kp);
-	if (!enabled)
-		disable_msm_thermal();
-	else
-		pr_info("msm_thermal: no action for enabled = %d\n", enabled);
+	pr_info("msm_thermal: setting trip range %d..%d on sensor %d.\n", release_temperature, 			trigger_temperature, msm_thermal_info.sensor_id); 
+	if (trigger_temperature != NO_TRIGGER_TEMPERATURE)
+		tsens_set_tz_warm_temp_degC(msm_thermal_info.sensor_id, trigger_temperature, &trip_work);
 
-	pr_info("msm_thermal: enabled = %d\n", enabled);
-
-	return ret;
+	if (release_temperature != NO_RELEASE_TEMPERATURE)
+		tsens_set_tz_cool_temp_degC(msm_thermal_info.sensor_id, release_temperature, &trip_work);
 }
 
+<<<<<<< HEAD
 static struct kernel_param_ops module_ops = {
 	.set = set_enabled,
 	.get = param_get_bool,
@@ -177,20 +237,66 @@ static struct kernel_param_ops module_ops = {
 
 module_param_cb(enabled, &module_ops, &enabled, 0644);
 MODULE_PARM_DESC(enabled, "enforce thermal limit on cpu");
+=======
+static int
+select_throttled_bin(unsigned temp)
+{
+	int i;
+	int new_bin = -1;
+
+	for (i = 0; i < N_TEMP_LIMITS; i++) {
+		if (temp >= limit_temp_degC[i]) new_bin = i;
+	}
+
+	if (new_bin > throttled_bin) return new_bin;
+	if (temp <= release_temp(throttled_bin)) return new_bin;
+	return throttled_bin;
+}
+
+static void check_temp_and_throttle_if_needed(struct work_struct *work)
+{
+	struct tsens_device tsens_dev;
+	unsigned long temp_ul = 0;
+	unsigned temp;
+	int new_bin;
+	int ret;
+
+	tsens_dev.sensor_num = msm_thermal_info.sensor_id;
+	ret = tsens_get_temp(&tsens_dev, &temp_ul);
+	if (ret) {
+		pr_warn("msm_thermal: Unable to read TSENS sensor %d\n",
+				tsens_dev.sensor_num);
+		return;
+	}
+
+	temp = (unsigned) temp_ul;
+	new_bin = select_throttled_bin(temp);
+
+	pr_debug("msm_thermal: TSENS sensor %d is %u degC old-bin %d new-bin %d\n",
+		tsens_dev.sensor_num, temp, throttled_bin, new_bin);
+	update_all_cpus_max_freq_if_changed(new_bin, temp);
+}
+
+static void check_temp(struct work_struct *work)
+{
+	check_temp_and_throttle_if_needed(work);
+	configure_sensor_trip_points();
+}
+>>>>>>> 2cdaea4... kernel-based thermal control (based on @crpalmer's work) from @flar2
 
 int __devinit msm_thermal_init(struct msm_thermal_data *pdata)
 {
-	int ret = 0;
 
 	BUG_ON(!pdata);
 	BUG_ON(pdata->sensor_id >= TSENS_MAX_SENSORS);
 	memcpy(&msm_thermal_info, pdata, sizeof(struct msm_thermal_data));
 
-	enabled = 1;
-	INIT_DELAYED_WORK(&check_temp_work, check_temp);
-	schedule_delayed_work(&check_temp_work, 0);
+	INIT_DELAYED_WORK(&first_work, check_temp);
+	INIT_WORK(&trip_work, check_temp);
 
-	return ret;
+	schedule_delayed_work(&first_work, msecs_to_jiffies(5*1000)); 
+
+	return 0;
 }
 
 static int __devinit msm_thermal_dev_probe(struct platform_device *pdev)
@@ -207,7 +313,7 @@ static int __devinit msm_thermal_dev_probe(struct platform_device *pdev)
 		goto fail;
 	WARN_ON(data.sensor_id >= TSENS_MAX_SENSORS);
 
-	key = "qcom,poll-ms";
+/*	key = "qcom,poll-ms";
 	ret = of_property_read_u32(node, key, &data.poll_ms);
 	if (ret)
 		goto fail;
@@ -223,7 +329,7 @@ static int __devinit msm_thermal_dev_probe(struct platform_device *pdev)
 		goto fail;
 
 	key = "qcom,freq-step";
-	ret = of_property_read_u32(node, key, &data.freq_step);
+	ret = of_property_read_u32(node, key, &data.freq_step);*/
 
 fail:
 	if (ret)
