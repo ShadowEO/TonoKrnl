@@ -26,6 +26,7 @@
 extern uint32_t maxscroff;
 extern uint32_t maxscroff_freq;
 extern uint32_t ex_max_freq;
+
 static int limit_set = 0;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
