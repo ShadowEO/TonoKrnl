@@ -63,8 +63,8 @@
 #undef CONFIG_HAS_EARLYSUSPEND
 #endif
 
-bool backlight_dimmer = false;
-module_param(backlight_dimmer, bool, 0755);
+int backlight_dimmer = 0;
+module_param(backlight_dimmer, int, 0755);
 
 static unsigned char *fbram;
 static unsigned char *fbram_phys;
