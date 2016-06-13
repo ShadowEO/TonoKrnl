@@ -1588,7 +1588,7 @@ static int elan_ktf3k_ts_probe(struct i2c_client *client,
 
 	private_ts = ts;
 
-	//elan_ktf2k_touch_sysfs_init();
+	elan_ktf2k_touch_sysfs_init();
       ts->attrs.attrs = elan_attr;
 	err = sysfs_create_group(&client->dev.kobj, &ts->attrs);
 	if (err) {
