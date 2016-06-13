@@ -18,7 +18,7 @@
 #include "drm.h"
 
 #include <linux/msm_ion.h>
-#include <linux/genlock.h>
+#include </home/toxus/linux-flo-3.4.0/include/linux/genlock.h>
 
 #include "kgsl.h"
 #include "kgsl_device.h"

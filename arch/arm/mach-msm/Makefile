@@ -6,12 +6,7 @@ obj-y += timer.o
 endif
 obj-y += clock.o clock-voter.o clock-dummy.o
 obj-y += modem_notifier.o subsystem_map.o
-<<<<<<< HEAD
 obj-$(CONFIG_CPU_FREQ_MSM) += cpufreq.o
-=======
-obj-$(CONFIG_MSM_MPDEC) += msm_mpdecision.o
-obj-$(CONFIG_INTELLI_PLUG) += intelli_plug.o
->>>>>>> 46a9318... Add intelli-plug support, thanks to the great Faux123. Disabled by default.
 obj-$(CONFIG_DEBUG_FS) += nohlt.o clock-debug.o
 obj-$(CONFIG_KEXEC) += msm_kexec.o
 
@@ -393,7 +388,6 @@ obj-$(CONFIG_MSM_HSIC_SYSMON_TEST) += hsic_sysmon_test.o
 obj-$(CONFIG_MSM_RPM_SMD) += rpm-smd.o
 obj-$(CONFIG_MSM_CPR) += msm_cpr.o
 obj-$(CONFIG_MSM_VP_REGULATOR) += msm_vp.o
-obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
 
 ifdef CONFIG_MSM_CPR
 obj-$(CONFIG_DEBUG_FS) += msm_cpr-debug.o
