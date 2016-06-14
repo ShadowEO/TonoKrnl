@@ -8143,3 +8143,5 @@ inlcude/config/kernel.release
 include/generated/autoconf.h
 include/generated/compile.h
 include/generated/utsrelease.h
+include/config/
+include/generated/
