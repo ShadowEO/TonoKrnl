@@ -8134,4 +8134,12 @@ usr/modules.builtin
 usr/modules.order
 vmlinux
 vmlinux.o
-
+.config.old
+.version
+include/config/auto.conf
+include/config/cpu/freq/default/gov/interactive.h
+include/config/cpu/freq/stat/details.h
+inlcude/config/kernel.release
+include/generated/autoconf.h
+include/generated/compile.h
+include/generated/utsrelease.h
