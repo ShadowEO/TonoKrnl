@@ -1,3 +1,4 @@
+Module.symvers
 .missing-syscalls.d
 .tmp_System.map
 .tmp_kallsyms1.S
@@ -9,6 +10,8 @@
 .tmp_vmlinux2
 .vmlinux.cmd
 .vmlinux.o.cmd
+TonoKern*.img
+TonoKrnl*.img
 System.map
 arch/arm/boot/.Image.cmd
 arch/arm/boot/.zImage.cmd
@@ -8145,3 +8148,4 @@ include/generated/compile.h
 include/generated/utsrelease.h
 include/config/
 include/generated/
+build/zImage
