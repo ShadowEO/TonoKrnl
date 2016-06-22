@@ -1,3 +1,14 @@
+.old_version
+build/boot.img
+debian/tmp/
+net/netfilter/.xt_TPROXY.mod.o.tmp
+net/netfilter/.xt_TRACE.mod.o.d
+net/netfilter/.xt_TRACE.mod.o.tmp
+newboot
+newboot.img
+scripts/.unifdef.cmd
+scripts/unifdef
+usr/include/
 Module.symvers
 .missing-syscalls.d
 .tmp_System.map
