@@ -842,8 +842,6 @@ static int elan_ktf3k_ts_get_power_state(struct i2c_client *client)
 	return power_state;
 }
 
-
-
 static int elan_ktf3k_ts_hw_reset(struct i2c_client *client, unsigned int time)
 {
       struct elan_ktf3k_ts_data *ts = i2c_get_clientdata(client);
@@ -1664,7 +1662,6 @@ static int elan_ktf3k_ts_probe(struct i2c_client *client,
     touch_debug(DEBUG_INFO, "[ELAN]misc_register finished!!");	
 
   update_power_source();
-  elan_ktf3k_ts_rough_calibrate(client);
   return 0;
 
 err_input_register_device_failed:
@@ -1751,8 +1748,7 @@ static int elan_ktf3k_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 		if (rc)
 			enable_irq(client->irq);
 
-		if(work_lock == 0) {
-		    rc = elan_ktf3k_ts_rough_calibrate(client);
+		if(work_lock == 0)
 		    rc = elan_ktf3k_ts_set_power_state(client, PWR_STATE_DEEP_SLEEP);
 	}
 	return 0;
