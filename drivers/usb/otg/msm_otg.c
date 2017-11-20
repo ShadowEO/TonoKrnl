@@ -99,7 +99,7 @@ static int global_vbus_suspend_status;
 static int global_id_pin_suspend_status;
 
 //otg+charge: sysfs entry - credit to flar2
-static bool usbhost_charge_mode = false
+static bool usbhost_charge_mode = false;
 module_param(usbhost_charge_mode, bool, 0755);
 
 /* APQ8064 GPIO pin definition */
@@ -1408,7 +1408,7 @@ static void msm_hsusb_vbus_power(struct msm_otg *motg, bool on)
 	static bool vbus_is_on;
 
 	//otg+charge: just to be safe, turn off battery power to otg peripheral - credit flar2
-	if (usbhost_chatge_mode) {
+	if (usbhost_charge_mode) {
 		printk("[usbhost_charge_mode]: Do not supply power in host mode\n");
 		msm_otg_notify_host_mode(motg, on);
 		return;
@@ -2275,7 +2275,7 @@ static void msm_chg_detect_work(struct work_struct *w)
 				break;
 			}
 
-			if (line_state) /* DP > VLGC or/and DM > VLGC */
+			if (line_state) { /* DP > VLGC or/and DM > VLGC */
 			//	motg->chg_type = USB_PROPRIETARY_CHARGER;
 			//else
 			//	motg->chg_type = USB_SDP_CHARGER;
