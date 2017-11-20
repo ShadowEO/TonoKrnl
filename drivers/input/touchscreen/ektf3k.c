@@ -906,7 +906,7 @@ static void update_power_source(void){
 	if (power_source == SLIM_HDMI_MODE) {
 		elan_ktf3k_ts_set_power_source(private_ts->client, HDMI_POWER_SOURCE_CMD);
 	} else {
-		elan_ktf3k_ts_set_power_source(private_ts->client, 1);
+		elan_ktf3k_ts_set_power_source(private_ts->client, power_source != USB_NO_Cable);
 	}
 }
 
